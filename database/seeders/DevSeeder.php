@@ -5,37 +5,31 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\User;
 use App\Models\Store;
+use App\Models\User;
 use App\Models\Product;
 
-class DatabaseSeeder extends Seeder
+class DevSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // 1) Crear tienda base
         $store = Store::create([
-            'name' => 'Tienda Default',
-            'slug' => 'default',
+            'name' => 'Tienda Demo',
+            'slug' => 'tienda-demo',
         ]);
 
-        // 2) Crear usuario admin asociado
-        User::create([
-            'name' => 'Alex Ocampo',
-            'email' => 'alex.segundo.st@gmail.com',
-            'password' => Hash::make('password123'), // cámbiala luego
+        $user = User::create([
+            'name' => 'Admin Demo',
+            'email' => 'admin@demo.cl',
+            'password' => Hash::make('password'),
             'store_id' => $store->id,
         ]);
 
-        // 3) (Opcional recomendado) Producto demo para probar imágenes
         Product::create([
             'store_id' => $store->id,
             'name' => 'Producto Demo',
             'slug' => 'producto-demo',
-            'description' => 'Producto de prueba para imágenes',
+            'description' => 'Producto de prueba',
             'price' => 9990,
             'stock' => 10,
             'sku' => 'SKU-DEMO',
