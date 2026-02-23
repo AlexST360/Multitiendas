@@ -37,7 +37,11 @@ class RegisteredUserController extends Controller
         ]);
 
         // Store por defecto (single-store por ahora)
-        $store = Store::where('slug', 'default')->firstOrFail();
+        // En testing/dev puede que no exista todavía, así que lo aseguramos aquí.
+        $store = Store::firstOrCreate(
+            ['slug' => 'default'],
+            ['name' => 'Default Store']
+        );
 
         $user = User::create([
             'name' => $request->name,

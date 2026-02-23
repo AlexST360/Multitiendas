@@ -6,6 +6,7 @@ use App\Models\Store;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Domain\Orders\Enums\OrderStatus; // ✅ NUEVO (solo agregado)
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -241,7 +242,6 @@ class StorefrontController extends Controller
                 $qty = (int) $row['qty'];
                 if ($qty < 1) continue;
 
-                // Validación stock (sin reservar todavía)
                 if ($qty > $p->stock) $qty = $p->stock;
                 if ($qty < 1) continue;
 
@@ -267,7 +267,7 @@ class StorefrontController extends Controller
             $order = Order::create([
                 'store_id' => $store->id,
                 'public_token' => (string) Str::uuid(),
-                'status' => 'pending_payment',
+                'status' => OrderStatus::PendingPayment, // ✅ ÚNICO CAMBIO REAL
                 'customer_name' => $data['customer_name'],
                 'customer_email' => $data['customer_email'],
                 'customer_phone' => $data['customer_phone'] ?? null,
@@ -298,7 +298,6 @@ class StorefrontController extends Controller
                 ->with('status', 'No se pudo crear la orden (carrito inválido o sin productos activos)');
         }
 
-        // Vaciar carrito luego de crear orden
         session()->forget($cartKey);
 
         return redirect()

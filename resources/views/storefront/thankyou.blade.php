@@ -5,7 +5,7 @@
             <h1 class="text-3xl font-semibold mt-1">Orden creada</h1>
 
             <div class="mt-4 text-gray-700">
-                Estado: <span class="font-semibold">{{ $order->status }}</span>
+                Estado: <span class="font-semibold">{{ $order->status->value }}</span>
             </div>
 
             <div class="mt-6">
