@@ -2,81 +2,149 @@
 
 namespace App\Domain\Payments;
 
-use App\Domain\Payments\Exceptions\PaymentAmountMismatchException;
 use App\Domain\Orders\Enums\OrderStatus;
+use App\Domain\Payments\DTO\ConfirmedPayment;
 use App\Domain\Payments\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ConfirmPaymentService
 {
-    /**
-     * Confirma un pago aprobado por un gateway.
-     *
-     * - Aplica idempotencia
-     * - Valida monto y moneda
-     * - Crea registro Payment
-     * - Cambia estado de Order a Paid
-     */
-    public function handle(
-        Order $order,
-        string $gateway,
-        string $gatewayReference,
-        int $amount,
-        string $currency,
-        string $idempotencyKey,
-        array $rawResponse = []
-    ): Payment {
-        return DB::transaction(function () use (
-            $order,
-            $gateway,
-            $gatewayReference,
-            $amount,
-            $currency,
-            $idempotencyKey,
-            $rawResponse
-        ) {
+    public function confirmDto(ConfirmedPayment $dto): Payment
+    {
+        return $this->confirm([
+            'store_id' => $dto->storeId,
+            'order_id' => $dto->orderId,
+            'gateway' => $dto->gateway,
+            'gateway_reference' => $dto->gatewayReference,
+            'amount' => $dto->amount,
+            'currency' => $dto->currency,
+            'idempotency_key' => $dto->idempotencyKey,
+            'raw_payload' => $dto->rawPayload,
+        ]);
+    }
 
-            //  Idempotencia fuerte por store + idempotency_key
-            $existing = Payment::where('store_id', $order->store_id)
-                ->where('idempotency_key', $idempotencyKey)
+    public function confirm(array $data): Payment
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | 0. Idempotencia FIRST (antes de validar estado)
+        |--------------------------------------------------------------------------
+        | Si el gateway reintenta el webhook, y nosotros ya procesamos este intento,
+        | devolvemos el mismo Payment aunque la orden ya esté en "paid".
+        */
+        $existing = Payment::query()
+            ->where('store_id', $data['store_id'])
+            ->where('idempotency_key', $data['idempotency_key'])
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($data) {
+
+            $order = Order::query()
+                ->where('store_id', $data['store_id'])
+                ->where('id', $data['order_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            /*
+            |--------------------------------------------------------------------------
+            | 1. Si ya está pagada, no aceptamos otra idempotency_key
+            |--------------------------------------------------------------------------
+            */
+            if ($order->status === OrderStatus::Paid) {
+                throw new \DomainException('La orden ya está pagada.');
+            }
+
+            if ($order->status !== OrderStatus::PendingPayment) {
+                throw new \DomainException('La orden no está en estado válido para confirmar pago.');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Validar moneda (normalizada)
+            |--------------------------------------------------------------------------
+            */
+            $currency = strtoupper($data['currency'] ?? ($order->currency ?? 'CLP'));
+
+            if (strtoupper($order->currency ?? 'CLP') !== $currency) {
+                throw new \InvalidArgumentException('Moneda inválida para esta orden.');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 3. Validar monto (histórico sagrado)
+            |--------------------------------------------------------------------------
+            */
+            if ((int) $data['amount'] !== (int) $order->total) {
+                throw new \InvalidArgumentException('Monto inválido para esta orden.');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. Re-chequeo idempotencia dentro de la transacción (concurrencia)
+            |--------------------------------------------------------------------------
+            */
+            $existing = Payment::query()
+                ->where('store_id', $data['store_id'])
+                ->where('idempotency_key', $data['idempotency_key'])
                 ->first();
 
             if ($existing) {
                 return $existing;
             }
 
-            //  Validación de monto
-            if ($order->total !== $amount || $order->currency !== $currency) {
-                throw new PaymentAmountMismatchException(
-                    orderId: $order->id,
-                    expectedAmount: $order->total,
-                    receivedAmount: $amount,
-                    currency: $currency,
-                    gatewayReference: $gatewayReference
-                );
-            }
-
-            //  Crear pago
-            $payment = Payment::create([
-                'store_id' => $order->store_id,
-                'order_id' => $order->id,
-                'gateway' => $gateway,
-                'gateway_reference' => $gatewayReference,
-                'status' => PaymentStatus::Approved,
-                'currency' => $currency,
-                'amount' => $amount,
-                'idempotency_key' => $idempotencyKey,
-                'raw_response' => $rawResponse,
-            ]);
-
-            //  Marcar orden como pagada (si no lo está)
-            if ($order->status !== OrderStatus::Paid) {
-                $order->update([
-                    'status' => OrderStatus::Paid,
+            /*
+            |--------------------------------------------------------------------------
+            | 5. Crear Payment aprobado
+            |--------------------------------------------------------------------------
+            */
+            try {
+                $payment = Payment::create([
+                    'store_id' => $data['store_id'],
+                    'order_id' => $order->id,
+                    'gateway' => $data['gateway'],
+                    'gateway_reference' => $data['gateway_reference'] ?? null,
+                    'status' => PaymentStatus::Approved,
+                    'currency' => $currency,
+                    'amount' => (int) $data['amount'],
+                    'idempotency_key' => $data['idempotency_key'],
+                    'raw_response' => $data['raw_payload'] ?? null,
                 ]);
+            } catch (QueryException $e) {
+                // Carrera por unique constraint (store_id, idempotency_key)
+                $payment = Payment::query()
+                    ->where('store_id', $data['store_id'])
+                    ->where('idempotency_key', $data['idempotency_key'])
+                    ->first();
+
+                if ($payment) {
+                    return $payment;
+                }
+
+                throw $e;
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 6. Marcar orden pagada + paid_at (si existe)
+            |--------------------------------------------------------------------------
+            */
+            $update = [
+                'status' => OrderStatus::Paid,
+            ];
+
+            if (Schema::hasColumn('orders', 'paid_at')) {
+                $update['paid_at'] = now();
+            }
+
+            $order->update($update);
 
             return $payment;
         });

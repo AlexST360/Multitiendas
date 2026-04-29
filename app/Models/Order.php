@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Domain\Orders\Enums\OrderStatus;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'store_id',
         'public_token',
@@ -19,19 +22,15 @@ class Order extends Model
         'currency',
         'subtotal',
         'total',
+        // 'paid_at', // si existe columna en DB
     ];
 
     protected $casts = [
         'subtotal' => 'integer',
         'total' => 'integer',
-        'status' => OrderStatus::class, //  ahora es enum real
+        'status' => OrderStatus::class,
+        // 'paid_at' => 'datetime', // si existe columna en DB
     ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
 
     public function store(): BelongsTo
     {
@@ -44,7 +43,7 @@ class Order extends Model
     }
 
     /**
-     * Una orden puede tener muchos pagos (webhook repetido, reintentos, etc.)
+     * Una orden puede tener muchos pagos (reintentos, webhooks repetidos, etc.)
      */
     public function payments(): HasMany
     {

@@ -36,9 +36,17 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // 🔐 Índices importantes
+            //  Índices importantes
             $table->unique(['store_id', 'idempotency_key']);
+
+            //  Índice clave para consultas por orden (multi-tenant)
+            $table->index(['store_id', 'order_id']);
+
+            //  Índice útil para tracking por gateway
             $table->index(['store_id', 'gateway', 'gateway_reference']);
+
+            // (Opcional PRO) si el gateway_reference es único por gateway/store:
+            // $table->unique(['store_id', 'gateway', 'gateway_reference']);
         });
     }
 

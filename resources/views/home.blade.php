@@ -1,4 +1,4 @@
-<x-guest-layout>
+<x-storefront-layout>
     <div class="max-w-4xl mx-auto py-16 px-6 text-center">
         <h1 class="text-4xl font-bold text-gray-900">
             Multora
@@ -20,4 +20,4 @@
             </a>
         </div>
     </div>
-</x-guest-layout>
+</x-storefront-layout>

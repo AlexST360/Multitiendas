@@ -1,4 +1,4 @@
-<x-guest-layout>
+<x-storefront-layout>
     <div class="max-w-6xl mx-auto py-10 px-4">
 
         {{-- HERO --}}
@@ -92,4 +92,4 @@
         @endif
 
     </div>
-</x-guest-layout>
+</x-storefront-layout>
