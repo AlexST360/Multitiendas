@@ -7,9 +7,11 @@ use App\Domain\Payments\DTO\ConfirmedPayment;
 use App\Domain\Payments\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Domain\Payments\Exceptions\PaymentAmountMismatchException;
+use App\Mail\OrderPaidNotification;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Mail;
 
 class ConfirmPaymentService
 {
@@ -83,7 +85,13 @@ class ConfirmPaymentService
             |--------------------------------------------------------------------------
             */
             if ((int) $data['amount'] !== (int) $order->total) {
-                throw new \InvalidArgumentException('Monto inválido para esta orden.');
+                throw new PaymentAmountMismatchException(
+                    orderId:          $order->id,
+                    expectedAmount:   (int) $order->total,
+                    receivedAmount:   (int) $data['amount'],
+                    currency:         $currency,
+                    gatewayReference: $data['gateway_reference'] ?? 'unknown',
+                );
             }
 
             /*
@@ -136,15 +144,16 @@ class ConfirmPaymentService
             | 6. Marcar orden pagada + paid_at (si existe)
             |--------------------------------------------------------------------------
             */
-            $update = [
-                'status' => OrderStatus::Paid,
-            ];
+            $order->update([
+                'status'  => OrderStatus::Paid,
+                'paid_at' => now(),
+            ]);
 
-            if (Schema::hasColumn('orders', 'paid_at')) {
-                $update['paid_at'] = now();
+            // Enviar email de confirmación si el cliente dejó su correo
+            if ($order->customer_email) {
+                Mail::to($order->customer_email)
+                    ->queue(new OrderPaidNotification($order, $order->store));
             }
-
-            $order->update($update);
 
             return $payment;
         });

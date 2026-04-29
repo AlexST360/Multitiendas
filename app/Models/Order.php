@@ -22,14 +22,14 @@ class Order extends Model
         'currency',
         'subtotal',
         'total',
-        // 'paid_at', // si existe columna en DB
+        'paid_at',
     ];
 
     protected $casts = [
         'subtotal' => 'integer',
-        'total' => 'integer',
-        'status' => OrderStatus::class,
-        // 'paid_at' => 'datetime', // si existe columna en DB
+        'total'    => 'integer',
+        'status'   => OrderStatus::class,
+        'paid_at'  => 'datetime',
     ];
 
     public function store(): BelongsTo
