@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ShipmentController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\FakePaymentController;
 use App\Http\Controllers\FakeWebhookController;
 use App\Http\Controllers\WebpayInitController;
@@ -128,6 +129,10 @@ Route::post('/s/{store:slug}/checkout/place', [StorefrontController::class, 'pla
 // Thank you público
 Route::get('/s/{store:slug}/o/{token}', [StorefrontController::class, 'thankYou'])
     ->name('storefront.order.thankyou');
+
+// Descarga boleta PDF (pública, solo órdenes pagadas)
+Route::get('/s/{store:slug}/o/{token}/boleta', [BoletaController::class, 'download'])
+    ->name('storefront.order.boleta');
 
 // Confirmación fake visible (simulación manual)
 Route::post('/s/{store:slug}/o/{token}/confirm-fake-payment', [FakePaymentController::class, 'confirm'])
