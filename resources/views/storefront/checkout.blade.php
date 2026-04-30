@@ -105,10 +105,46 @@
                         <span>${{ number_format($subtotal) }}</span>
                     </div>
 
+                    {{-- Cupón aplicado --}}
+                    @if($coupon)
+                        <div class="mt-2 flex justify-between text-sm text-green-700">
+                            <span>
+                                Cupón <span class="font-mono font-semibold">{{ $coupon->code }}</span>
+                                ({{ $coupon->type->value === 'percent' ? $coupon->value . '%' : '$' . number_format($coupon->value) }})
+                            </span>
+                            <span>-${{ number_format($discount) }}</span>
+                        </div>
+                        <form method="POST" action="{{ route('storefront.coupon.remove', $store) }}" class="mt-1">
+                            @csrf
+                            <button type="submit" class="text-xs text-red-500 underline">Quitar cupón</button>
+                        </form>
+                    @endif
+
                     <div class="mt-4 border-t pt-4 flex justify-between font-semibold">
                         <span>Total</span>
-                        <span>${{ number_format($subtotal) }}</span>
+                        <span>${{ number_format($total) }}</span>
                     </div>
+
+                    {{-- Input cupón --}}
+                    @if(!$coupon)
+                        <div class="mt-4 border-t pt-4">
+                            <form method="POST" action="{{ route('storefront.coupon.apply', $store) }}" class="flex gap-2">
+                                @csrf
+                                <input name="coupon_code"
+                                       value="{{ old('coupon_code') }}"
+                                       class="flex-1 border-gray-300 rounded text-sm uppercase"
+                                       placeholder="Código de cupón"
+                                       style="text-transform:uppercase">
+                                <button type="submit"
+                                        class="px-3 py-2 border rounded text-sm hover:bg-gray-50">
+                                    Aplicar
+                                </button>
+                            </form>
+                            @error('coupon_code')
+                                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    @endif
 
                     <div class="mt-6">
                         <h3 class="font-semibold mb-2">Datos</h3>

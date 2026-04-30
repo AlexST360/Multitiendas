@@ -23,6 +23,8 @@ class Order extends Model
         'shipping_city',
         'shipping_region',
         'shipping_notes',
+        'coupon_code',
+        'discount',
         'currency',
         'subtotal',
         'total',
@@ -30,8 +32,9 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'subtotal' => 'integer',
-        'total'    => 'integer',
+        'subtotal'  => 'integer',
+        'discount'  => 'integer',
+        'total'     => 'integer',
         'status'   => OrderStatus::class,
         'paid_at'  => 'datetime',
     ];

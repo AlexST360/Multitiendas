@@ -129,6 +129,18 @@
                     @endforeach
                 </div>
 
+                @if($order->discount > 0)
+                    <div class="mt-3 flex justify-between text-sm text-green-700">
+                        <span>
+                            Descuento
+                            @if($order->coupon_code)
+                                <span class="font-mono">({{ $order->coupon_code }})</span>
+                            @endif
+                        </span>
+                        <span>-${{ number_format($order->discount) }}</span>
+                    </div>
+                @endif
+
                 <div class="mt-4 flex justify-between font-semibold">
                     <span>Total</span>
                     <span>${{ number_format($order->total) }}</span>

@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\ShipmentController;
+use App\Http\Controllers\CouponApplyController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\BoletaController;
 use App\Http\Controllers\FakePaymentController;
@@ -89,6 +91,14 @@ Route::middleware(['auth'])
 
         Route::put('/shipments/{shipment}', [ShipmentController::class, 'update'])
             ->name('admin.shipments.update');
+
+        // Cupones
+        Route::get('/coupons', [CouponController::class, 'index'])->name('admin.coupons.index');
+        Route::get('/coupons/create', [CouponController::class, 'create'])->name('admin.coupons.create');
+        Route::post('/coupons', [CouponController::class, 'store'])->name('admin.coupons.store');
+        Route::get('/coupons/{coupon}/edit', [CouponController::class, 'edit'])->name('admin.coupons.edit');
+        Route::put('/coupons/{coupon}', [CouponController::class, 'update'])->name('admin.coupons.update');
+        Route::post('/coupons/{coupon}/toggle-active', [CouponController::class, 'toggleActive'])->name('admin.coupons.toggleActive');
     });
 
 /*
@@ -133,6 +143,12 @@ Route::get('/s/{store:slug}/o/{token}', [StorefrontController::class, 'thankYou'
 // Descarga boleta PDF (pública, solo órdenes pagadas)
 Route::get('/s/{store:slug}/o/{token}/boleta', [BoletaController::class, 'download'])
     ->name('storefront.order.boleta');
+
+// Cupones en checkout
+Route::post('/s/{store:slug}/coupon/apply', [CouponApplyController::class, 'apply'])
+    ->name('storefront.coupon.apply');
+Route::post('/s/{store:slug}/coupon/remove', [CouponApplyController::class, 'remove'])
+    ->name('storefront.coupon.remove');
 
 // Confirmación fake visible (simulación manual)
 Route::post('/s/{store:slug}/o/{token}/confirm-fake-payment', [FakePaymentController::class, 'confirm'])

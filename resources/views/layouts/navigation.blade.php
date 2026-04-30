@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('admin.shipments.index')" :active="request()->routeIs('admin.shipments.*')">
                         Envíos
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.coupons.index')" :active="request()->routeIs('admin.coupons.*')">
+                        Cupones
+                    </x-nav-link>
                 </div>
             </div>
 

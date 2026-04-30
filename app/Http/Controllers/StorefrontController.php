@@ -141,7 +141,29 @@ class StorefrontController extends Controller
             }
         }
 
-        return view('storefront.checkout', compact('store', 'items', 'subtotal'));
+        // Cupón en sesión
+        $coupon   = null;
+        $discount = 0;
+
+        $couponCode = session("coupon_{$store->id}");
+
+        if ($couponCode) {
+            $coupon = \App\Models\Coupon::where('store_id', $store->id)
+                ->where('code', $couponCode)
+                ->where('active', true)
+                ->first();
+
+            if ($coupon && $coupon->isValid($subtotal)) {
+                $discount = $coupon->calculateDiscount($subtotal);
+            } else {
+                session()->forget("coupon_{$store->id}");
+                $coupon = null;
+            }
+        }
+
+        $total = max(0, $subtotal - $discount);
+
+        return view('storefront.checkout', compact('store', 'items', 'subtotal', 'coupon', 'discount', 'total'));
     }
 
     /**
@@ -217,6 +239,12 @@ class StorefrontController extends Controller
             'shipping_notes'   => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Resolver cupón desde sesión
+        $couponCode    = session("coupon_{$store->id}");
+        $appliedCoupon = $couponCode
+            ? \App\Models\Coupon::where('store_id', $store->id)->where('code', $couponCode)->where('active', true)->first()
+            : null;
+
         $cartKey = $this->cartKey($store->id);
         $cart = session()->get($cartKey, []);
 
@@ -268,6 +296,17 @@ class StorefrontController extends Controller
                 return null;
             }
 
+            // Calcular descuento dentro de la transacción
+            $discount    = 0;
+            $couponToUse = null;
+
+            if ($appliedCoupon && $appliedCoupon->isValid($subtotal)) {
+                $discount    = $appliedCoupon->calculateDiscount($subtotal);
+                $couponToUse = $appliedCoupon;
+            }
+
+            $total = max(0, $subtotal - $discount);
+
             $order = Order::create([
                 'store_id'         => $store->id,
                 'public_token'     => (string) Str::uuid(),
@@ -279,10 +318,16 @@ class StorefrontController extends Controller
                 'shipping_city'    => $data['shipping_city'],
                 'shipping_region'  => $data['shipping_region'],
                 'shipping_notes'   => $data['shipping_notes'] ?? null,
+                'coupon_code'      => $couponToUse?->code,
+                'discount'         => $discount,
                 'currency'         => 'CLP',
                 'subtotal'         => $subtotal,
-                'total'            => $subtotal,
+                'total'            => $total,
             ]);
+
+            if ($couponToUse) {
+                $couponToUse->increment('uses_count');
+            }
 
             foreach ($items as $it) {
                 OrderItem::create([
@@ -307,6 +352,7 @@ class StorefrontController extends Controller
         }
 
         session()->forget($cartKey);
+        session()->forget("coupon_{$store->id}");
 
         return redirect()
             ->route('storefront.order.thankyou', [$store, $order->public_token]);
