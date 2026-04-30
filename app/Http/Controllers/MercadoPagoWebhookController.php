@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Payments\ConfirmPaymentService;
-use App\Domain\Payments\Gateways\MercadoPagoGateway;
+use App\Domain\Payments\Gateways\GatewayFactory;
 use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class MercadoPagoWebhookController extends Controller
 {
     public function handle(
         Request $request,
-        MercadoPagoGateway $gateway,
+        GatewayFactory $factory,
         ConfirmPaymentService $service,
     ): JsonResponse {
 
@@ -53,8 +53,17 @@ class MercadoPagoWebhookController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        /*
+        |--------------------------------------------------------------------------
+        | Primera llamada con credenciales de .env para resolver external_reference.
+        | Luego se reconstruye el gateway con las credenciales reales de la tienda.
+        |--------------------------------------------------------------------------
+        */
+
+        $resolverGateway = $factory->mercadopago(new Store());
+
         try {
-            $payment = $gateway->payClient->get((int) $paymentId);
+            $payment = $resolverGateway->payClient->get((int) $paymentId);
         } catch (\Exception $e) {
             // Loguear y retornar 200 para que MP no reintente
             \Log::error('MercadoPago webhook: error al obtener payment', [
@@ -86,6 +95,8 @@ class MercadoPagoWebhookController extends Controller
         if (! $store || ! $order) {
             return response()->json(['ok' => false, 'error' => 'Orden no encontrada.']);
         }
+
+        $gateway = $factory->mercadopago($store);
 
         /*
         |--------------------------------------------------------------------------

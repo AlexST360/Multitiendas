@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Orders\Enums\OrderStatus;
-use App\Domain\Payments\Gateways\MercadoPagoGateway;
+use App\Domain\Payments\Gateways\GatewayFactory;
 use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
@@ -15,8 +15,10 @@ class MercadoPagoInitController extends Controller
         Request $request,
         Store $store,
         string $token,
-        MercadoPagoGateway $gateway,
+        GatewayFactory $factory,
     ): RedirectResponse {
+
+        $gateway = $factory->mercadopago($store);
 
         $order = Order::query()
             ->where('store_id', $store->id)

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Orders\Enums\OrderStatus;
-use App\Domain\Payments\Gateways\WebpayGateway;
+use App\Domain\Payments\Gateways\GatewayFactory;
 use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class WebpayInitController extends Controller
 {
@@ -15,7 +16,7 @@ class WebpayInitController extends Controller
         Request $request,
         Store $store,
         string $token,
-        WebpayGateway $gateway,
+        GatewayFactory $factory,
     ): RedirectResponse {
 
         $order = Order::query()
@@ -25,10 +26,17 @@ class WebpayInitController extends Controller
 
         abort_unless($order->status === OrderStatus::PendingPayment, 409, 'La orden no está pendiente de pago.');
 
-        $returnUrl = route('payments.webpay.return');
+        $gateway  = $factory->webpay($store);
+        $response = $gateway->tx->create(
+            $store->id . '-' . $order->id,
+            'sess_' . $order->id . '_' . time(),
+            (int) $order->total,
+            route('payments.webpay.return')
+        );
 
-        $redirectUrl = $gateway->createTransaction($order, $store, $returnUrl);
+        // Guardar qué tienda inició este token para recuperarla en el return
+        Cache::put('webpay_token_' . $response->getToken(), $store->id, now()->addHour());
 
-        return redirect($redirectUrl);
+        return redirect($response->getUrl() . '?token_ws=' . $response->getToken());
     }
 }

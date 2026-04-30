@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Payments\ConfirmPaymentService;
-use App\Domain\Payments\Gateways\WebpayGateway;
+use App\Domain\Payments\Gateways\GatewayFactory;
 use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class WebpayReturnController extends Controller
 {
     public function handle(
         Request $request,
-        WebpayGateway $gateway,
+        GatewayFactory $factory,
         ConfirmPaymentService $service,
     ): RedirectResponse {
 
@@ -66,7 +67,12 @@ class WebpayReturnController extends Controller
         // Hacemos el commit aquí, luego resolvemos store/order, luego confirmamos.
 
         try {
-            // Paso a: obtener buy_order sin perder el token
+            // Resolver store desde caché (guardada en WebpayInitController)
+            $storeIdFromCache = Cache::get('webpay_token_' . $tokenWs);
+            $storeForCommit   = $storeIdFromCache ? Store::find((int) $storeIdFromCache) : null;
+
+            // Construir gateway con credenciales de la tienda (o fallback a env si no hay config)
+            $gateway     = $factory->webpay($storeForCommit ?? new Store());
             $rawResponse = $gateway->tx->commit($tokenWs);
 
             if (! str_contains((string) $rawResponse->getBuyOrder(), '-')) {

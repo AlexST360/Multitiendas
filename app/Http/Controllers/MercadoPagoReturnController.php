@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Payments\ConfirmPaymentService;
-use App\Domain\Payments\Gateways\MercadoPagoGateway;
+use App\Domain\Payments\Gateways\GatewayFactory;
 use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +22,7 @@ class MercadoPagoReturnController extends Controller
 {
     public function handle(
         Request $request,
-        MercadoPagoGateway $gateway,
+        GatewayFactory $factory,
         ConfirmPaymentService $service,
     ): RedirectResponse {
 
@@ -44,6 +44,8 @@ class MercadoPagoReturnController extends Controller
         if (! $store || ! $order) {
             return redirect()->route('home')->with('error', 'No se encontró la orden.');
         }
+
+        $gateway = $factory->mercadopago($store);
 
         /*
         |--------------------------------------------------------------------------

@@ -32,11 +32,11 @@ class WebpayGateway implements GatewayInterface
 {
     public Transaction $tx;
 
-    public function __construct()
+    public function __construct(array $config = [])
     {
-        $env          = config('services.transbank.environment', 'integration');
-        $commerceCode = config('services.transbank.commerce_code', WebpayPlus::INTEGRATION_COMMERCE_CODE);
-        $apiKey       = config('services.transbank.api_key', \Transbank\Webpay\Options::INTEGRATION_API_KEY);
+        $env          = $config['environment']   ?? config('services.transbank.environment', 'integration');
+        $commerceCode = $config['commerce_code'] ?? config('services.transbank.commerce_code', WebpayPlus::INTEGRATION_COMMERCE_CODE);
+        $apiKey       = $config['api_key']       ?? config('services.transbank.api_key', \Transbank\Webpay\Options::INTEGRATION_API_KEY);
 
         $this->tx = $env === 'production'
             ? Transaction::buildForProduction($apiKey, $commerceCode)

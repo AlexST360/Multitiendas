@@ -35,12 +35,13 @@ class MercadoPagoGateway implements GatewayInterface
 
     private bool $isSandbox;
 
-    public function __construct()
+    public function __construct(array $config = [])
     {
-        $this->isSandbox = config('services.mercadopago.environment', 'sandbox') !== 'production';
+        $env             = $config['environment']   ?? config('services.mercadopago.environment', 'sandbox');
+        $this->isSandbox = $env !== 'production';
 
         MercadoPagoConfig::setAccessToken(
-            config('services.mercadopago.access_token')
+            $config['access_token'] ?? config('services.mercadopago.access_token')
         );
 
         $this->payClient  = new PaymentClient();
