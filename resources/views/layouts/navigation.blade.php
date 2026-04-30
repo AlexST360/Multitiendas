@@ -13,7 +13,13 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        Dashboard
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.products.index')" :active="request()->routeIs('admin.products.*')">
+                        Productos
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.shipments.index')" :active="request()->routeIs('admin.shipments.*')">
+                        Envíos
                     </x-nav-link>
                 </div>
             </div>

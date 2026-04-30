@@ -121,7 +121,8 @@
                                 <input
                                     name="customer_name"
                                     class="w-full border-gray-300 rounded"
-                                    placeholder="Nombre"
+                                    placeholder="Nombre completo"
+                                    value="{{ old('customer_name') }}"
                                     required
                                 >
                                 <input
@@ -129,22 +130,67 @@
                                     type="email"
                                     class="w-full border-gray-300 rounded"
                                     placeholder="Email"
+                                    value="{{ old('customer_email') }}"
                                     required
                                 >
                                 <input
                                     name="customer_phone"
                                     class="w-full border-gray-300 rounded"
                                     placeholder="Teléfono"
+                                    value="{{ old('customer_phone') }}"
                                 >
                             </div>
+
+                            <div class="mt-5 border-t pt-4">
+                                <h3 class="font-semibold text-sm mb-3">Dirección de envío</h3>
+                                <div class="space-y-3">
+                                    <input
+                                        name="shipping_address"
+                                        class="w-full border-gray-300 rounded"
+                                        placeholder="Calle y número"
+                                        value="{{ old('shipping_address') }}"
+                                        required
+                                    >
+                                    <input
+                                        name="shipping_city"
+                                        class="w-full border-gray-300 rounded"
+                                        placeholder="Ciudad"
+                                        value="{{ old('shipping_city') }}"
+                                        required
+                                    >
+                                    <select name="shipping_region" class="w-full border-gray-300 rounded" required>
+                                        <option value="">Región</option>
+                                        @foreach([
+                                            'Arica y Parinacota','Tarapacá','Antofagasta','Atacama',
+                                            'Coquimbo','Valparaíso','Metropolitana','O\'Higgins',
+                                            'Maule','Ñuble','Biobío','La Araucanía',
+                                            'Los Ríos','Los Lagos','Aysén','Magallanes',
+                                        ] as $region)
+                                            <option value="{{ $region }}" {{ old('shipping_region') === $region ? 'selected' : '' }}>
+                                                {{ $region }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <input
+                                        name="shipping_notes"
+                                        class="w-full border-gray-300 rounded"
+                                        placeholder="Instrucciones de entrega (opcional)"
+                                        value="{{ old('shipping_notes') }}"
+                                    >
+                                </div>
+                            </div>
+
+                            @if($errors->any())
+                                <div class="mt-3 text-sm text-red-600 space-y-1">
+                                    @foreach($errors->all() as $error)
+                                        <div>{{ $error }}</div>
+                                    @endforeach
+                                </div>
+                            @endif
 
                             <button type="submit" class="mt-6 w-full px-4 py-2 bg-black text-white rounded-md">
                                 Continuar al pago
                             </button>
-
-                            <div class="mt-3 text-xs text-gray-400">
-                                (Por ahora: crea Orden en pending_payment y muestra confirmación)
-                            </div>
                         </form>
                     </div>
                 </div>

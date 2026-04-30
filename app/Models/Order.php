@@ -19,6 +19,10 @@ class Order extends Model
         'customer_name',
         'customer_email',
         'customer_phone',
+        'shipping_address',
+        'shipping_city',
+        'shipping_region',
+        'shipping_notes',
         'currency',
         'subtotal',
         'total',
@@ -48,5 +52,10 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function shipment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Shipment::class);
     }
 }

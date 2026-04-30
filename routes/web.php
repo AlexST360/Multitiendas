@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ShipmentController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\FakePaymentController;
 use App\Http\Controllers\FakeWebhookController;
@@ -71,6 +72,22 @@ Route::middleware(['auth'])
 
         Route::delete('/products/{product}/images/{image}', [ProductController::class, 'destroyImage'])
             ->name('admin.products.images.destroy');
+
+        // Envíos
+        Route::get('/shipments', [ShipmentController::class, 'index'])
+            ->name('admin.shipments.index');
+
+        Route::get('/shipments/orders/{order}/create', [ShipmentController::class, 'create'])
+            ->name('admin.shipments.create');
+
+        Route::post('/shipments/orders/{order}', [ShipmentController::class, 'store'])
+            ->name('admin.shipments.store');
+
+        Route::get('/shipments/{shipment}/edit', [ShipmentController::class, 'edit'])
+            ->name('admin.shipments.edit');
+
+        Route::put('/shipments/{shipment}', [ShipmentController::class, 'update'])
+            ->name('admin.shipments.update');
     });
 
 /*

@@ -208,9 +208,13 @@ class StorefrontController extends Controller
     public function placeOrder(Request $request, Store $store): RedirectResponse
     {
         $data = $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:50'],
+            'customer_name'    => ['required', 'string', 'max:255'],
+            'customer_email'   => ['required', 'email', 'max:255'],
+            'customer_phone'   => ['nullable', 'string', 'max:50'],
+            'shipping_address' => ['required', 'string', 'max:255'],
+            'shipping_city'    => ['required', 'string', 'max:100'],
+            'shipping_region'  => ['required', 'string', 'max:100'],
+            'shipping_notes'   => ['nullable', 'string', 'max:500'],
         ]);
 
         $cartKey = $this->cartKey($store->id);
@@ -265,15 +269,19 @@ class StorefrontController extends Controller
             }
 
             $order = Order::create([
-                'store_id' => $store->id,
-                'public_token' => (string) Str::uuid(),
-                'status' => OrderStatus::PendingPayment, // ✅ ÚNICO CAMBIO REAL
-                'customer_name' => $data['customer_name'],
-                'customer_email' => $data['customer_email'],
-                'customer_phone' => $data['customer_phone'] ?? null,
-                'currency' => 'CLP',
-                'subtotal' => $subtotal,
-                'total' => $subtotal,
+                'store_id'         => $store->id,
+                'public_token'     => (string) Str::uuid(),
+                'status'           => OrderStatus::PendingPayment,
+                'customer_name'    => $data['customer_name'],
+                'customer_email'   => $data['customer_email'],
+                'customer_phone'   => $data['customer_phone'] ?? null,
+                'shipping_address' => $data['shipping_address'],
+                'shipping_city'    => $data['shipping_city'],
+                'shipping_region'  => $data['shipping_region'],
+                'shipping_notes'   => $data['shipping_notes'] ?? null,
+                'currency'         => 'CLP',
+                'subtotal'         => $subtotal,
+                'total'            => $subtotal,
             ]);
 
             foreach ($items as $it) {
@@ -309,7 +317,7 @@ class StorefrontController extends Controller
         $order = Order::query()
             ->where('store_id', $store->id)
             ->where('public_token', $token)
-            ->with('items')
+            ->with(['items', 'shipment'])
             ->firstOrFail();
 
         return view('storefront.thankyou', compact('store', 'order'));

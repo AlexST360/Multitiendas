@@ -65,6 +65,51 @@
                 </div>
             @endif
 
+            {{-- Estado del envío --}}
+            @if ($order->shipment)
+                @php
+                    $s = $order->shipment;
+                    $colors = [
+                        'pending'   => 'bg-gray-100 text-gray-700',
+                        'preparing' => 'bg-yellow-100 text-yellow-800',
+                        'shipped'   => 'bg-blue-100 text-blue-800',
+                        'delivered' => 'bg-green-100 text-green-800',
+                        'returned'  => 'bg-red-100 text-red-800',
+                    ];
+                    $color = $colors[$s->status->value] ?? 'bg-gray-100 text-gray-700';
+                @endphp
+                <div class="mt-6 rounded-lg border p-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="font-semibold">Envío</h2>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium {{ $color }}">
+                            {{ $s->status->label() }}
+                        </span>
+                    </div>
+                    <div class="mt-3 text-sm text-gray-700 space-y-1">
+                        @if($s->carrier)
+                            <div><span class="text-gray-500">Courier:</span> {{ $s->carrier }}</div>
+                        @endif
+                        @if($s->tracking_number)
+                            <div>
+                                <span class="text-gray-500">Seguimiento:</span>
+                                @if($s->tracking_url)
+                                    <a href="{{ $s->tracking_url }}" target="_blank"
+                                       class="font-mono text-blue-600 underline">{{ $s->tracking_number }}</a>
+                                @else
+                                    <span class="font-mono">{{ $s->tracking_number }}</span>
+                                @endif
+                            </div>
+                        @endif
+                        @if($s->shipped_at)
+                            <div><span class="text-gray-500">Despachado:</span> {{ $s->shipped_at->format('d/m/Y') }}</div>
+                        @endif
+                        @if($s->delivered_at)
+                            <div><span class="text-gray-500">Entregado:</span> {{ $s->delivered_at->format('d/m/Y') }}</div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <div class="mt-6">
                 <h2 class="font-semibold mb-2">Detalle</h2>
 
