@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentConfigController;
 use App\Http\Controllers\Admin\ShipmentController;
 use App\Http\Controllers\CouponApplyController;
@@ -92,6 +93,10 @@ Route::middleware(['auth'])
 
         Route::put('/shipments/{shipment}', [ShipmentController::class, 'update'])
             ->name('admin.shipments.update');
+
+        // Órdenes
+        Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('admin.orders.show');
 
         // Pasarelas de pago
         Route::get('/payment-configs', [PaymentConfigController::class, 'index'])->name('admin.payment_configs.index');
